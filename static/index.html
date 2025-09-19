@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Image Classifier</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+      }
+      video,
+      canvas,
+      img {
+        max-width: 400px;
+        margin: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body
+    style="
+      background-size: cover;
+      background-color: black;
+      background-image: url(../../src/banner-bg.png);
+    "
+  >
+    <section
+      style="
+        background-image: url(../../src/banner-gradient-shape.svg);
+        position: absolute;
+        width: 100%;
+        top: 0;
+        left: 0;
+        bottom: 0;
+      "
+    >
+      <h1 style="color: white">📷 የፍራፍሬ ብስለት ገምጋሚ</h1>
+      <h2 style="color: white">(ፖም፤ሙዝ እና ብርቱካን)</h2>
+      <hr />
+      <div class="section" id="camera-section">
+        <h2 style="color: white">ቀጥታ ካሜራ</h2>
+        <video id="video" autoplay width="400"></video>
+        <br />
+        <button
+          style="color: white; background: #02907a; border: none"
+          onclick="capturePhoto()"
+        >
+          አንሳ
+        </button>
+        <button
+          style="color: white; background: #00ad00; border: none"
+          onclick="uploadCamera()"
+        >
+          ገምት
+        </button>
+        <canvas id="canvas" style="display: none"></canvas>
+      </div>
+      <h1 style="color: rgb(94, 184, 11)">ወይም</h1>
+      <!-- === File Upload Section === -->
+      <div class="section" id="file-section">
+        <h2 style="color: white">ምስል እዚህ ጋር ልቀቅ</h2>
+        <input
+          style="color: white"
+          type="file"
+          id="fileInput"
+          accept="image/*"
+        />
+        <button onclick="uploadFile()">የለቀቅከውን ምስል ገምት</button>
+      </div>
+
+      <h1 id="result" style="font-size: large; color: white; font-size: larger">
+        ውጤት:
+      </h1>
+    </section>
+    <script>
+      const fileUrl = "http://127.0.0.1:8000/predict_file";
+      const cameraUrl = "http://127.0.0.1:8000/predict_camera";
+
+      // === File Upload ===
+      async function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+        if (!fileInput.files.length) return alert("Please select a file");
+
+        let formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        let res = await fetch(fileUrl, { method: "POST", body: formData });
+        let data = await res.json();
+        document.getElementById("result").innerText = "ውጤት: " + data.class;
+      }
+
+      // === Live Camera ===
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Start camera
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          video.srcObject = stream;
+        })
+        .catch((err) => alert("Camera access denied: " + err));
+
+      function capturePhoto() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.style.display = "block";
+      }
+
+      async function uploadCamera() {
+        canvas.toBlob(async (blob) => {
+          let formData = new FormData();
+          formData.append("file", blob, "camera.jpg");
+
+          let res = await fetch(cameraUrl, { method: "POST", body: formData });
+          let data = await res.json();
+          document.getElementById("result").innerText = "ውጤት: " + data.class;
+        }, "image/jpeg");
+      }
+    </script>
+  </body>
+</html>
